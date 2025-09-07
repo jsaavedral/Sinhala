@@ -43,7 +43,7 @@
         <header class="masthead bg-primary text-white text-center">
             <div class="container d-flex align-items-center flex-column">
                 <!-- Masthead Avatar Image-->
-                <img class="masthead-avatar mb-5" src="" alt="..." />
+                <!-- <img class="masthead-avatar mb-5" src="" alt="..." /> -->
                 <!-- Masthead Heading-->
                 <h1 class="masthead-heading text-uppercase mb-0">Let's learn Sinhala basics!</h1>
                 <!-- Icon Divider-->
@@ -145,7 +145,7 @@
                     <div class="divider-custom-icon"><i class="fas fa-star"></i></div>
                     <div class="divider-custom-line"></div>
                 </div>
-                <img class="masthead-avatar mb-5" src="assets/img/Couple.png" alt="..." />
+                <img class="about-couple-img mb-5 mx-auto d-block" src="assets/img/Couple.png" alt="Couple illustration" />
                 <!-- About Section Content-->
                 <div class="row">
                     <div class="col-lg-4 ms-auto">
@@ -546,6 +546,21 @@
             }
             #mainNav {
                 background: linear-gradient(90deg, #ffb700 0%, #016e67 20%, #ff8200 40%,#8d153a 60%);
+            }
+            .about-couple-img {
+                display: block;
+                margin-left: auto;
+                margin-right: auto;
+                max-width: 320px;
+                width: 100%;
+                height: auto;
+                border-radius: 1.5rem;
+                box-shadow: 0 4px 24px rgba(0,0,0,0.08);
+            }
+            @media (max-width: 576px) {
+                .about-couple-img {
+                    max-width: 90vw;
+                }
             }
         </style>
     </body>
