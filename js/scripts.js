@@ -87,12 +87,37 @@ window.addEventListener('DOMContentLoaded', event => {
     let stage = 0; // 0..5: vowel groups, 6..12: consonant groups
     let attempts = 0;
     let solvedStages = {};
+    let advancedMode = false;
 
-    function showGameModal() {
+    function shuffleArray(arr) {
+        // Fisher-Yates shuffle
+        for (let i = arr.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [arr[i], arr[j]] = [arr[j], arr[i]];
+        }
+    }
+
+    function showGameModal(isAdvanced = false) {
         document.getElementById('alphabetGameModal').style.display = 'flex';
         stage = 0;
         attempts = 0;
         solvedStages = {};
+        advancedMode = isAdvanced;
+        if (advancedMode) {
+            // Shuffle but keep group sizes
+            window.vowelGroupsShuffled = [];
+            window.consonantGroupsShuffled = [];
+            let vowelsCopy = vowels.slice();
+            shuffleArray(vowelsCopy);
+            for (let i = 0; i < vowelsCopy.length; i += 2) {
+                window.vowelGroupsShuffled.push(vowelsCopy.slice(i, i + 2));
+            }
+            let consonantsCopy = consonants.slice();
+            shuffleArray(consonantsCopy);
+            for (let i = 0; i < 21; i += 3) {
+                window.consonantGroupsShuffled.push(consonantsCopy.slice(i, i + 3));
+            }
+        }
         renderStage();
     }
     function closeGameModal() {
@@ -103,12 +128,17 @@ window.addEventListener('DOMContentLoaded', event => {
         let html = '';
         let isVowel = stage < vowelGroups.length;
         let groupIdx = isVowel ? stage : stage - vowelGroups.length;
-        let group = isVowel ? vowelGroups[groupIdx] : consonantGroups[groupIdx];
+        let group = null;
+        if (advancedMode) {
+            group = isVowel ? window.vowelGroupsShuffled[groupIdx] : window.consonantGroupsShuffled[groupIdx];
+        } else {
+            group = isVowel ? vowelGroups[groupIdx] : consonantGroups[groupIdx];
+        }
         let groupType = isVowel ? 'Vowels' : 'Consonants';
         html += `<h5>${groupType} (Group ${groupIdx+1})</h5>`;
         html += `<form id="alphaForm">`;
         group.forEach((item, i) => {
-            html += `<div class="mb-2 alphabet-game-row d-flex align-items-center" style="flex-wrap:nowrap;overflow-x:auto;"><span style="font-size:2rem; min-width:2.5rem;">${item.char}</span> <input type="text" class="alpha-input" data-idx="${i}" maxlength="5" style="width:60px; margin-right:10px;" /> <span class="answer-hint" id="answer-hint-${i}" style="color:#28a745; font-weight:bold; margin-left:10px; min-width:2.5rem; white-space:nowrap;"></span></div>`;
+            html += `<div class="mb-2 alphabet-game-row d-flex align-items-center" style="flex-wrap:nowrap;overflow-x:auto;"><span style="font-size:2rem; min-width:2.5rem;">${item.char}</span> <input type="text" class="alpha-input" data-idx="${i}" maxlength="5" style="width:60px; margin-right:10px; text-transform:lowercase;" autocapitalize="off" autocomplete="off" inputmode="text" /> <span class="answer-hint" id="answer-hint-${i}" style="color:#28a745; font-weight:bold; margin-left:10px; min-width:2.5rem; white-space:nowrap;"></span></div>`;
         });
         html += '<button type="button" class="btn btn-primary mt-2" id="checkAlphaBtn">Check My Answer</button>';
         html += '<div id="alphaResult" class="mt-2"></div>';
@@ -200,7 +230,9 @@ window.addEventListener('DOMContentLoaded', event => {
     // Button event listeners
     document.addEventListener('DOMContentLoaded', function() {
         const playBtn = document.getElementById('playAlphabetGameBtn');
-        if (playBtn) playBtn.onclick = showGameModal;
+        if (playBtn) playBtn.onclick = function() { showGameModal(false); };
+        const playAdvBtn = document.getElementById('playAlphabetGameAdvancedBtn');
+        if (playAdvBtn) playAdvBtn.onclick = function() { showGameModal(true); };
         const closeBtn = document.getElementById('closeAlphabetGameBtn');
         if (closeBtn) closeBtn.onclick = closeGameModal;
     });
