@@ -294,6 +294,22 @@
                                     </div>
                                     <!-- Portfolio Modal - Image-->
                                     <img class="img-fluid rounded mb-5" src="assets/img/portfolio/Alphabet_letters.png" alt="..." />
+                                    <!-- Play Game Button -->
+                                    <button id="playAlphabetGameBtn" class="btn btn-success mb-3">Play</button>
+                                    <!-- Alphabet Game Modal (hidden by default) -->
+                                    <div id="alphabetGameModal" class="modal" tabindex="-1" style="display:none; background:rgba(0,0,0,0.7); position:fixed; top:0; left:0; width:100vw; height:100vh; z-index:2000; align-items:center; justify-content:center;">
+                                      <div class="modal-dialog modal-lg" style="margin:auto;">
+                                        <div class="modal-content">
+                                          <div class="modal-header">
+                                            <h5 class="modal-title">Sinhala Alphabet Game</h5>
+                                            <button type="button" class="btn-close" id="closeAlphabetGameBtn" aria-label="Close"></button>
+                                          </div>
+                                          <div class="modal-body" id="alphabetGameBody">
+                                            <!-- Game content will be injected here by JS -->
+                                          </div>
+                                        </div>
+                                      </div>
+                                    </div>
                                     <!-- Portfolio Modal - Text-->
                                     <p class="mb-4">Lorem ipsum dolor sit amet, consectetur adipisicing elit. Mollitia neque assumenda ipsam nihil, molestias magnam, recusandae quos quis inventore quisquam velit asperiores, vitae? Reprehenderit soluta, eos quod consequuntur itaque. Nam.</p>
                                     <button class="btn btn-primary" data-bs-dismiss="modal">
@@ -561,6 +577,41 @@
                 .about-couple-img {
                     max-width: 90vw;
                 }
+            }
+            /* Fix for Sinhala Alphabet Game input row on small screens */
+            @media (max-width: 768px) {
+              #alphabetGameModal .d-flex.align-items-center {
+                flex-direction: column;
+                align-items: flex-start !important;
+                gap: 0.25rem;
+                margin-left: 0.5rem;
+              }
+              #alphabetGameModal .d-flex.align-items-center span[style*='font-size:2rem'] {
+                min-width: unset;
+                margin-bottom: 0.2rem;
+              }
+            }
+            /* Fix for Sinhala Alphabet Game input row: keep answer to the right, never below */
+            .alphabet-game-row {
+              flex-wrap: nowrap !important;
+              overflow-x: auto;
+              align-items: center;
+            }
+            .alphabet-game-row .answer-hint {
+              min-width: 2.5rem;
+              white-space: nowrap;
+              margin-left: 10px;
+            }
+            @media (max-width: 768px) {
+              .alphabet-game-row {
+                flex-direction: row !important;
+                align-items: center !important;
+                margin-left: 0.5rem;
+              }
+              .alphabet-game-row span[style*='font-size:2rem'] {
+                min-width: 2.5rem;
+                margin-bottom: 0;
+              }
             }
         </style>
     </body>
