@@ -292,17 +292,30 @@ window.addEventListener('DOMContentLoaded', event => {
             <div class="mb-3">Total Mistakes: <b style='color:#dc3545;'>${mistakeCount}</b></div>
             <div class="mb-4 text-center mx-auto" style="max-width:400px;">
         `;
-        // Show all groups in order, coloring correct/incorrect, centered, with sound sample
+        // Collect all items with their group and index for user answer/mistake lookup
+        let allItems = [];
+        let groupOffset = 0;
         allGroups.forEach((group, gIdx) => {
-            html += '<div class="mb-2 d-flex justify-content-center">';
             group.forEach((item, i) => {
-                let user = (userAnswers[gIdx] && userAnswers[gIdx][i]) ? userAnswers[gIdx][i].trim().toLowerCase() : '';
-                let isMistake = userMistakes[gIdx] && userMistakes[gIdx][i];
-                let isCorrect = user === item.ans && !isMistake;
-                html += `<span style="font-size:1.5rem; margin-right:10px; color:${isCorrect ? '#28a745' : (isMistake ? '#dc3545' : '#333')}; font-weight:bold; display:inline-block; min-width:2.5rem; text-align:center;">${item.char}<br><span style='font-size:1rem; color:#333; font-weight:normal;'>(${item.ans})</span></span>`;
+                allItems.push({
+                    char: item.char,
+                    ans: item.ans,
+                    gIdx,
+                    i
+                });
             });
-            html += '</div>';
         });
+        // Sort allItems alphabetically by Sinhala character
+        allItems.sort((a, b) => a.char.localeCompare(b.char));
+        // Display all letters in a single row, alphabetically
+        html += '<div class="mb-2 d-flex flex-wrap justify-content-center">';
+        allItems.forEach(item => {
+            let user = (userAnswers[item.gIdx] && userAnswers[item.gIdx][item.i]) ? userAnswers[item.gIdx][item.i].trim().toLowerCase() : '';
+            let isMistake = userMistakes[item.gIdx] && userMistakes[item.gIdx][item.i];
+            let isCorrect = user === item.ans && !isMistake;
+            html += `<span style="font-size:1.5rem; margin:0 10px 10px 0; color:${isCorrect ? '#28a745' : (isMistake ? '#dc3545' : '#333')}; font-weight:bold; display:inline-block; min-width:2.5rem; text-align:center;">${item.char}<br><span style='font-size:1rem; color:#333; font-weight:normal;'>(${item.ans})</span></span>`;
+        });
+        html += '</div>';
         html += `</div><button class="btn btn-primary mt-3" id="closeResultsBtn">Close</button></div>`;
         body.innerHTML = html;
         document.getElementById('closeResultsBtn').onclick = closeGameModal;
