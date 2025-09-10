@@ -295,9 +295,10 @@
                                     <!-- Portfolio Modal - Image-->
                                     <img class="img-fluid rounded mb-2" src="assets/img/portfolio/Alphabet_letters.png" alt="..." />
                                     <!-- Play Game Buttons -->
-                                    <div class="mb-3 d-flex gap-2 justify-content-center">
-                                      <button id="playAlphabetGameBtn" class="btn btn-success">Play Basic</button>
-                                      <button id="playAlphabetGameAdvancedBtn" class="btn btn-warning">Play Advanced</button>
+                                    <div class="mb-3 d-flex flex-row flex-nowrap gap-2 justify-content-center">
+                                      <button id="playAlphabetGameBtn" class="btn btn-success btn-sm">Play Basic</button>
+                                      <button id="playAlphabetGameIntermediateBtn" class="btn btn-info btn-sm">Play Intermediate</button>
+                                      <button id="playAlphabetGameAdvancedBtn" class="btn btn-warning btn-sm">Play Advanced</button>
                                     </div>
                                     <!-- Alphabet Game Modal (hidden by default) -->
                                     <div id="alphabetGameModal" class="modal" tabindex="-1" style="display:none; background:rgba(0,0,0,0.7); position:fixed; top:0; left:0; width:100vw; height:100vh; z-index:2000; align-items:center; justify-content:center;">
@@ -615,6 +616,36 @@
                 min-width: 2.5rem;
                 margin-bottom: 0;
               }
+            }
+            .portfolio-modal-title {
+              font-size: 2.2rem !important;
+            }
+            @media (max-width: 768px) {
+              .portfolio-modal-title {
+                font-size: 2.7rem !important;
+              }
+            }
+            #playAlphabetGameBtn,
+            #playAlphabetGameIntermediateBtn,
+            #playAlphabetGameAdvancedBtn {
+              color: #fff !important;
+              transition: filter 0.15s, box-shadow 0.15s;
+            }
+            #playAlphabetGameBtn:hover,
+            #playAlphabetGameIntermediateBtn:hover,
+            #playAlphabetGameAdvancedBtn:hover {
+              filter: brightness(0.92);
+              box-shadow: 0 2px 8px rgba(0,0,0,0.12);
+            }
+            #playAlphabetGameIntermediateBtn {
+              background-color: #138496 !important; /* darker cyan/teal */
+              border-color: #117a8b !important;
+              color: #fff !important;
+            }
+            #playAlphabetGameAdvancedBtn {
+              background-color: #b9770e !important; /* darker amber/gold */
+              border-color: #b9770e !important;
+              color: #fff !important;
             }
         </style>
     </body>
