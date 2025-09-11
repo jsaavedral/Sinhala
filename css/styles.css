@@ -1,3 +1,8 @@
+/* Show mistakes in red in the level complete summary */
+.level-complete-mistake {
+  color: #dc3545 !important;
+  font-weight: bold;
+}
 .typing-box {
   width: 64px;
   height: 48px;
@@ -44,6 +49,12 @@
 .d-flex.align-items-center.justify-content-center.gap-2.mt-2 > .nav-arrow {
   margin: 0 2px;
   flex-shrink: 0;
+}
+
+/* Show correct answers in green in the level complete summary */
+.level-complete-correct {
+  color: #28a745 !important;
+  font-weight: bold;
 }
 /*!
 * Start Bootstrap - Freelancer v7.0.7 (https://startbootstrap.com/theme/freelancer)

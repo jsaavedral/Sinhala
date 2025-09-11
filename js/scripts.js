@@ -216,7 +216,9 @@ window.addEventListener('DOMContentLoaded', event => {
         if (!userMistakes[stage]) {
             userMistakes[stage] = group.map(() => false);
         }
-        html += '<form id="alphaForm" class="typing-mode">';
+    html += '<form id="alphaForm" class="typing-mode">';
+    // Add TEST button for fast testing
+    html += '<button type="button" class="btn btn-warning btn-sm mb-2" id="testFillBtn" style="float:right;">Test</button>';
         group.forEach((item, i) => {
             html += `<div class="mb-2 alphabet-game-row d-flex align-items-center" style="flex-wrap:nowrap;overflow-x:auto;">
                 <span style="font-size:2rem; min-width:2.5rem;">${item.char}</span>
@@ -233,6 +235,21 @@ window.addEventListener('DOMContentLoaded', event => {
         html += '<div id="alphaResult" class="mt-2"></div>';
         html += '</form>';
         body.innerHTML = html;
+        // TEST button logic for typing mode
+        setTimeout(function() {
+            const testBtn = document.getElementById('testFillBtn');
+            if (testBtn) {
+                testBtn.onclick = function() {
+                    group.forEach((item, i) => {
+                        userAnswers[stage][i] = item.ans;
+                    });
+                    // Update input fields
+                    document.querySelectorAll('.answer-input').forEach((inp, i) => {
+                        inp.value = group[i].ans;
+                    });
+                };
+            }
+        }, 0);
         // Toggle button event (must be set after rendering)
         setTimeout(function() {
             const toggleBtn = document.getElementById('toggleModeBtn');
@@ -293,6 +310,7 @@ window.addEventListener('DOMContentLoaded', event => {
             });
             html += `</div>`;
             html += `</div>`;
+    html += '<button type="button" class="btn btn-warning btn-sm mb-2" id="testFillBtn" style="float:right;">Test</button>';
     html += '<div class="d-flex align-items-center justify-content-center gap-2 mt-2">';
     if (stage > 0) html += '<button class="nav-arrow" id="prevStageBtn" style="font-size:1.5rem;line-height:1;">&#8592;</button>';
     html += '<button type="button" class="btn btn-primary" id="checkDragDropBtn">Check My Answer</button>';
@@ -309,6 +327,20 @@ window.addEventListener('DOMContentLoaded', event => {
         html += '<div id="alphaResult" class="mt-2"></div>';
     // No legacy navigation row
     body.innerHTML = html;
+    // TEST button logic for drag-and-drop mode
+    setTimeout(function() {
+        const testBtn = document.getElementById('testFillBtn');
+        if (testBtn) {
+            testBtn.onclick = function() {
+                if (!window.userAnswers) window.userAnswers = [];
+                if (!window.userAnswers[stage]) window.userAnswers[stage] = group.map(() => '');
+                group.forEach((item, i) => {
+                    window.userAnswers[stage][i] = item.ans;
+                });
+                renderDragDropStage(group);
+            };
+        }
+    }, 0);
     // Diagnostic logs
     console.log('RENDER HTML:', html);
     console.log('Tiles:', document.querySelectorAll('.draggable-answer'));
@@ -329,6 +361,56 @@ window.addEventListener('DOMContentLoaded', event => {
                 e.dataTransfer.setData('source', tile.getAttribute('data-source'));
                 if (tile.parentElement.classList.contains('drop-target')) {
                     e.dataTransfer.setData('source-idx', tile.parentElement.getAttribute('data-idx'));
+                }
+            });
+            // --- Touch support for mobile drag-and-drop ---
+            let touchStartX = 0, touchStartY = 0, touchMoved = false;
+            tile.addEventListener('touchstart', function(e) {
+                if (e.touches.length === 1) {
+                    touchStartX = e.touches[0].clientX;
+                    touchStartY = e.touches[0].clientY;
+                    touchMoved = false;
+                    tile.classList.add('dragging-touch');
+                }
+            });
+            tile.addEventListener('touchmove', function(e) {
+                if (e.touches.length === 1) {
+                    touchMoved = true;
+                    let touch = e.touches[0];
+                    tile.style.position = 'fixed';
+                    tile.style.left = (touch.clientX - 30) + 'px';
+                    tile.style.top = (touch.clientY - 20) + 'px';
+                    tile.style.zIndex = 9999;
+                }
+            });
+            tile.addEventListener('touchend', function(e) {
+                tile.classList.remove('dragging-touch');
+                tile.style.position = '';
+                tile.style.left = '';
+                tile.style.top = '';
+                tile.style.zIndex = '';
+                if (!touchMoved) return;
+                let touch = e.changedTouches[0];
+                let dropTarget = document.elementFromPoint(touch.clientX, touch.clientY);
+                while (dropTarget && !dropTarget.classList.contains('drop-target') && dropTarget !== document.body) {
+                    dropTarget = dropTarget.parentElement;
+                }
+                if (dropTarget && dropTarget.classList.contains('drop-target')) {
+                    let idx = parseInt(dropTarget.getAttribute('data-idx'));
+                    if (!window.userAnswers) window.userAnswers = [];
+                    if (!window.userAnswers[stage]) window.userAnswers[stage] = group.map(() => '');
+                    // Remove from previous box if needed
+                    let ans = tile.getAttribute('data-ans');
+                    let source = tile.getAttribute('data-source');
+                    let sourceIdx = tile.parentElement.classList.contains('drop-target') ? tile.parentElement.getAttribute('data-idx') : undefined;
+                    if (source === 'box' && sourceIdx !== undefined && window.userAnswers[stage][parseInt(sourceIdx)] !== undefined) {
+                        window.userAnswers[stage][parseInt(sourceIdx)] = '';
+                    }
+                    if (window.userAnswers[stage][idx] !== undefined) {
+                        window.userAnswers[stage][idx] = '';
+                        window.userAnswers[stage][idx] = ans;
+                    }
+                    renderDragDropStage(group);
                 }
             });
         });
@@ -364,7 +446,10 @@ window.addEventListener('DOMContentLoaded', event => {
             });
         });
         // Check button
-        document.getElementById('checkDragDropBtn').onclick = function() {
+        const checkBtn = document.getElementById('checkDragDropBtn');
+        checkBtn.onclick = function() {
+            // Prevent double-clicks/rapid clicks
+            checkBtn.disabled = true;
             let correct = 0;
             let mistakes = [];
             let targets = document.querySelectorAll('.drop-target');
@@ -398,13 +483,27 @@ window.addEventListener('DOMContentLoaded', event => {
             if (correct === group.length) {
                 solvedStages[stage] = true;
                 document.getElementById('alphaResult').innerHTML = `Correct! You got all ${group.length} right.`;
+                // DEBUG: log stage and totalStages
+                console.log('[DEBUG] DragDrop: correct group, stage:', stage);
                 setTimeout(() => {
                     const totalStages = window.vowelGroupsShuffled.length + window.consonantGroupsShuffled.length;
+                    console.log('[DEBUG] DragDrop: setTimeout, stage:', stage, 'totalStages:', totalStages);
                     if (stage < totalStages - 1) {
                         stage++;
                         attempts = 0;
+                        console.log('[DEBUG] DragDrop: advancing to next stage', stage);
                         renderStage();
                     } else {
+                        console.log('[DEBUG] DragDrop: calling showResultsScreen() at stage', stage);
+                        // Show a visual debug message in the modal
+                        const body = document.getElementById('alphabetGameBody');
+                        if (body) {
+                            let dbg = document.createElement('div');
+                            dbg.style.color = 'red';
+                            dbg.style.fontWeight = 'bold';
+                            dbg.textContent = '[DEBUG] showResultsScreen() called!';
+                            body.appendChild(dbg);
+                        }
                         showResultsScreen();
                     }
                 }, 1000);
@@ -416,6 +515,8 @@ window.addEventListener('DOMContentLoaded', event => {
                 document.getElementById('alphaResult').innerHTML = `You got ${correct} out of ${group.length} correct. Please drag the correct answers as shown to move on.`;
             } else {
                 document.getElementById('alphaResult').innerHTML = `You got ${correct} out of ${group.length} correct. Attempts: ${attempts}/3`;
+                // Re-enable the button for another attempt
+                checkBtn.disabled = false;
             }
         };
         // Toggle button event for switching back to type mode
@@ -523,22 +624,27 @@ window.addEventListener('DOMContentLoaded', event => {
     navDiv.innerHTML = '';
     }
     function showResultsScreen() {
+        // Force sync: ensure userAnswers is up to date for all groups/letters
+        let allGroups = window.vowelGroupsShuffled.concat(window.consonantGroupsShuffled);
+        allGroups.forEach((group, gIdx) => {
+            if (!userAnswers[gIdx]) userAnswers[gIdx] = group.map(() => '');
+            group.forEach((item, i) => {
+                if (typeof userAnswers[gIdx][i] !== 'string') userAnswers[gIdx][i] = '';
+            });
+        });
         const body = document.getElementById('alphabetGameBody');
         // Count total mistakes (one per letter, only if player gave up)
         let mistakeCount = 0;
-        let allGroups = window.vowelGroupsShuffled.concat(window.consonantGroupsShuffled);
-        // let mistakeCount = 0;
         let totalLetters = 0;
         let totalCorrectFinal = 0;
         allGroups.forEach((group, gIdx) => {
             group.forEach((item, i) => {
                 totalLetters++;
                 const user = (userAnswers[gIdx] && userAnswers[gIdx][i]) ? userAnswers[gIdx][i].trim().toLowerCase() : '';
-                const isMistake = userMistakes[gIdx] && userMistakes[gIdx][i];
-                if (isMistake || user !== item.ans) {
-                    mistakeCount++;
-                } else {
+                if (user === item.ans) {
                     totalCorrectFinal++;
+                } else {
+                    mistakeCount++;
                 }
             });
         });
@@ -592,9 +698,9 @@ window.addEventListener('DOMContentLoaded', event => {
             html += '<div class="mb-2 d-flex flex-wrap justify-content-center">';
             vowelItems.forEach(item => {
                 let user = (userAnswers[item.gIdx] && userAnswers[item.gIdx][item.i]) ? userAnswers[item.gIdx][item.i].trim().toLowerCase() : '';
-                let isMistake = userMistakes[item.gIdx] && userMistakes[item.gIdx][item.i];
-                let isCorrect = user === item.ans && !isMistake;
-                html += `<span style="font-size:1.5rem; margin:0 10px 10px 0; color:${isCorrect ? '#28a745' : (isMistake ? '#dc3545' : '#333')}; font-weight:bold; display:inline-block; min-width:2.5rem; text-align:center;">${item.char}<br><span style='font-size:1rem; color:#333; font-weight:normal;'>(${item.ans})</span></span>`;
+                let isCorrect = user === item.ans;
+                let cls = isCorrect ? 'level-complete-correct' : 'level-complete-mistake';
+                html += `<span class="${cls}" style="font-size:1.5rem; margin:0 10px 10px 0; font-weight:bold; display:inline-block; min-width:2.5rem; text-align:center;">${item.char}<br><span style='font-size:1rem; color:#333; font-weight:normal;'>(${item.ans})</span></span>`;
             });
             html += '</div>';
         }
@@ -603,9 +709,9 @@ window.addEventListener('DOMContentLoaded', event => {
             html += '<div class="mb-2 d-flex flex-wrap justify-content-center">';
             consonantItems.forEach(item => {
                 let user = (userAnswers[item.gIdx] && userAnswers[item.gIdx][item.i]) ? userAnswers[item.gIdx][item.i].trim().toLowerCase() : '';
-                let isMistake = userMistakes[item.gIdx] && userMistakes[item.gIdx][item.i];
-                let isCorrect = user === item.ans && !isMistake;
-                html += `<span style="font-size:1.5rem; margin:0 10px 10px 0; color:${isCorrect ? '#28a745' : (isMistake ? '#dc3545' : '#333')}; font-weight:bold; display:inline-block; min-width:2.5rem; text-align:center;">${item.char}<br><span style='font-size:1rem; color:#333; font-weight:normal;'>(${item.ans})</span></span>`;
+                let isCorrect = user === item.ans;
+                let cls = isCorrect ? 'level-complete-correct' : 'level-complete-mistake';
+                html += `<span class="${cls}" style="font-size:1.5rem; margin:0 10px 10px 0; font-weight:bold; display:inline-block; min-width:2.5rem; text-align:center;">${item.char}<br><span style='font-size:1rem; color:#333; font-weight:normal;'>(${item.ans})</span></span>`;
             });
             html += '</div>';
         }
