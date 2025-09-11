@@ -54,6 +54,7 @@ window.addEventListener('DOMContentLoaded', event => {
 });
 
 // === Sinhala Alphabet Game ===
+// === Sinhala Alphabet Game ===
 (function() {
     // Alphabet data
     const vowels = [
@@ -83,80 +84,38 @@ window.addEventListener('DOMContentLoaded', event => {
     const consonantGroupIndices = [
         [0,1,2],    // ක ග ච
         [3,4,5],    // ඡ ට ඬ
-        [6,7,8],    // ඨ ත ද
+        [6,7,8],    // ණ ත ද
         [9,10,11],  // න ප බ
         [12,13,14], // ම ය ර
         [15,16,17], // ල ව ස
         [18,19,20]  // හ ළ අං
     ];
 
-    // Game state
-    let stage = 0; // 0..5: vowel groups, 6..12: consonant groups
-    let attempts = 0;
-    let solvedStages = {};
-    let gameMode = 'basic'; // 'basic', 'intermediate', 'advanced'
-    let totalCorrect = 0;
-    let totalQuestions = 0;
-    let totalAttempts = 0;
-
-    // Track user answers for results
-    let userAnswers = [];
-    // Track user mistakes for results
-    let userMistakes = [];
-
-    function shuffleArray(arr) {
-        // Fisher-Yates shuffle
-        for (let i = arr.length - 1; i > 0; i--) {
-            const j = Math.floor(Math.random() * (i + 1));
-            [arr[i], arr[j]] = [arr[j], arr[i]];
-        }
-    }
-
-    function showGameModal(mode = 'basic') {
-        document.getElementById('alphabetGameModal').style.display = 'flex';
-        stage = 0;
-        attempts = 0;
-        solvedStages = {};
-        gameMode = mode;
-        totalCorrect = 0;
-        totalQuestions = 0;
-        totalAttempts = 0;
-        userAnswers = [];
-        userMistakes = [];
-        window.vowelGroupsShuffled = [];
-        window.consonantGroupsShuffled = [];
-        if (gameMode === 'advanced') {
-            let vowelsCopy = vowels.slice();
-            shuffleArray(vowelsCopy);
-            for (let i = 0; i < vowelsCopy.length; i += 2) {
-                window.vowelGroupsShuffled.push(vowelsCopy.slice(i, i + 2));
-            }
-            let consonantsCopy = consonants.slice();
-            shuffleArray(consonantsCopy);
-            for (let i = 0; i < consonantsCopy.length; i += 3) {
-                window.consonantGroupsShuffled.push(consonantsCopy.slice(i, i + 3));
-            }
-        } else if (gameMode === 'intermediate') {
-            for (let i = 0; i < vowels.length; i += 2) {
-                let group = vowels.slice(i, i + 2);
-                shuffleArray(group);
-                window.vowelGroupsShuffled.push(group);
-            }
-            consonantGroupIndices.forEach(idxArr => {
-                let group = idxArr.map(idx => consonants[idx]);
-                shuffleArray(group);
-                window.consonantGroupsShuffled.push(group);
-            });
-        } else {
-            for (let i = 0; i < vowels.length; i += 2) {
-                window.vowelGroupsShuffled.push(vowels.slice(i, i + 2));
-            }
-            consonantGroupIndices.forEach(idxArr => {
-                window.consonantGroupsShuffled.push(idxArr.map(idx => consonants[idx]));
-            });
-        }
-        renderStage();
-    }
+    const levels = [
+        {name: 'Basic', mistakes: 1},
+        {name: 'Intermediate', mistakes: 2},
+        {name: 'Advanced', mistakes: 3}
+    ];
+    let html = '';
+    levels.forEach(level => {
+        let total = vowels.length + consonants.length;
+        let correct = total - level.mistakes;
+        html += `<div class="mb-5 p-3 border rounded">
+            <h5 class="mb-3">${level.name} (Mistakes: ${level.mistakes})</h5>
+            <div><b>Total Correct:</b> ${correct} / ${total} &nbsp; <b>Total Mistakes:</b> <span style='color:#dc3545;'>${level.mistakes}</span></div>
+            <div class="mb-2 mt-3"><strong>Vowels</strong></div>
+            <div class="mb-2 d-flex flex-wrap justify-content-center">`;
+        vowels.forEach(v => {
+            html += `<span style="font-size:1.5rem; margin:0 10px 10px 0; color:#28a745; font-weight:bold; display:inline-block; min-width:2.5rem; text-align:center;">${v.char}<br><span style='font-size:1rem; color:#333; font-weight:normal;'>(${v.ans})</span></span>`;
+        });
+        html += `</div><div class="mb-2"><strong>Consonants</strong></div><div class="mb-2 d-flex flex-wrap justify-content-center">`;
+        consonants.forEach((c, i) => {
+            let color = i < level.mistakes ? '#dc3545' : '#28a745';
+            html += `<span style="font-size:1.5rem; margin:0 10px 10px 0; color:${color}; font-weight:bold; display:inline-block; min-width:2.5rem; text-align:center;">${c.char}<br><span style='font-size:1rem; color:#333; font-weight:normal;'>(${c.ans})</span></span>`;
+        });
+        html += `</div></div>`;
+    });
+    document.getElementById('alphabetTestModalBody').innerHTML = html;
     function closeGameModal() {
         document.getElementById('alphabetGameModal').style.display = 'none';
     }
@@ -185,7 +144,7 @@ window.addEventListener('DOMContentLoaded', event => {
         // Navigation
         html += '<div class="mt-3">';
         if (stage > 0) html += '<button class="btn btn-secondary me-2" id="prevStageBtn">Previous</button>';
-        if (solvedStages[stage] && stage < window.vowelGroupsShuffled.length + window.consonantGroupsShuffled.length - 1) html += '<button class="btn btn-secondary" id="nextStageBtn">Next</button>';
+        if (solvedStages[stage] && stage < window.vowelGroupsShuffled.length + window.consonantGroupsShuffled - 1) html += '<button class="btn btn-secondary" id="nextStageBtn">Next</button>';
         html += '</div>';
         body.innerHTML = html;
         attachGameEvents(group);
@@ -227,9 +186,10 @@ window.addEventListener('DOMContentLoaded', event => {
                     userMistakes[stage][i] = true;
                     document.getElementById(`answer-hint-${i}`).textContent = group[i].ans;
                 });
-                solvedStages[stage] = true;
-                document.getElementById('alphaResult').innerHTML = `You got ${correct} out of ${group.length} correct. The correct answers are shown in green.`;
-                renderStageNavOnly();
+                // Do NOT allow navigation yet; require all correct answers
+                document.getElementById('alphaResult').innerHTML = `You got ${correct} out of ${group.length} correct. <span style='color:#28a745;'>Correct answers are shown in green.</span><br><span style='color:#dc3545;font-weight:bold;'>Type the correct answers to move on.</span>`;
+                // Disable navigation buttons if present
+                renderStageNavOnly(true);
             } else {
                 document.getElementById('alphaResult').innerHTML = `You got ${correct} out of ${group.length} correct. Attempts: ${attempts}/3`;
             }
@@ -254,6 +214,11 @@ window.addEventListener('DOMContentLoaded', event => {
         let navDiv = document.querySelector('#alphabetGameBody .mt-3');
         if (!navDiv) return;
         let html = '';
+        // If forceDisable is true, do not show navigation buttons
+        if (arguments[0] === true) {
+            navDiv.innerHTML = html;
+            return;
+        }
         if (stage > 0) html += '<button class="btn btn-secondary me-2" id="prevStageBtn">Previous</button>';
         if (solvedStages[stage] && stage < vowelGroups.length + consonantGroups.length - 1) html += '<button class="btn btn-secondary" id="nextStageBtn">Next</button>';
         navDiv.innerHTML = html;
@@ -292,30 +257,69 @@ window.addEventListener('DOMContentLoaded', event => {
             <div class="mb-3">Total Mistakes: <b style='color:#dc3545;'>${mistakeCount}</b></div>
             <div class="mb-4 text-center mx-auto" style="max-width:400px;">
         `;
-        // Collect all items with their group and index for user answer/mistake lookup
-        let allItems = [];
-        let groupOffset = 0;
+        // Show vowels in their original order
+        let vowelItems = [];
+        let consonantItems = [];
+        // Find the indices for vowels and consonants in allGroups
+        let vowelCount = window.vowelGroupsShuffled.reduce((acc, g) => acc + g.length, 0);
+        let consonantCount = window.consonantGroupsShuffled.reduce((acc, g) => acc + g.length, 0);
+        // Map for quick lookup of user answers/mistakes by char and ans
+        let answerMap = {};
         allGroups.forEach((group, gIdx) => {
             group.forEach((item, i) => {
-                allItems.push({
-                    char: item.char,
-                    ans: item.ans,
+                answerMap[item.char + '|' + item.ans] = { gIdx, i };
+            });
+        });
+        // Vowels: use the original vowels array order
+        vowels.forEach(v => {
+            let key = v.char + '|' + v.ans;
+            if (answerMap[key]) {
+                let {gIdx, i} = answerMap[key];
+                vowelItems.push({
+                    char: v.char,
+                    ans: v.ans,
                     gIdx,
                     i
                 });
+            }
+        });
+        // Consonants: use the original consonants array order
+        consonants.forEach(c => {
+            let key = c.char + '|' + c.ans;
+            if (answerMap[key]) {
+                let {gIdx, i} = answerMap[key];
+                consonantItems.push({
+                    char: c.char,
+                    ans: c.ans,
+                    gIdx,
+                    i
+                });
+            }
+        });
+        // Display vowels (if any)
+        if (vowelItems.length > 0) {
+            html += '<div class="mb-2"><strong>Vowels</strong></div>';
+            html += '<div class="mb-2 d-flex flex-wrap justify-content-center">';
+            vowelItems.forEach(item => {
+                let user = (userAnswers[item.gIdx] && userAnswers[item.gIdx][item.i]) ? userAnswers[item.gIdx][item.i].trim().toLowerCase() : '';
+                let isMistake = userMistakes[item.gIdx] && userMistakes[item.gIdx][item.i];
+                let isCorrect = user === item.ans && !isMistake;
+                html += `<span style="font-size:1.5rem; margin:0 10px 10px 0; color:${isCorrect ? '#28a745' : (isMistake ? '#dc3545' : '#333')}; font-weight:bold; display:inline-block; min-width:2.5rem; text-align:center;">${item.char}<br><span style='font-size:1rem; color:#333; font-weight:normal;'>(${item.ans})</span></span>`;
             });
-        });
-        // Sort allItems alphabetically by Sinhala character
-        allItems.sort((a, b) => a.char.localeCompare(b.char));
-        // Display all letters in a single row, alphabetically
-        html += '<div class="mb-2 d-flex flex-wrap justify-content-center">';
-        allItems.forEach(item => {
-            let user = (userAnswers[item.gIdx] && userAnswers[item.gIdx][item.i]) ? userAnswers[item.gIdx][item.i].trim().toLowerCase() : '';
-            let isMistake = userMistakes[item.gIdx] && userMistakes[item.gIdx][item.i];
-            let isCorrect = user === item.ans && !isMistake;
-            html += `<span style="font-size:1.5rem; margin:0 10px 10px 0; color:${isCorrect ? '#28a745' : (isMistake ? '#dc3545' : '#333')}; font-weight:bold; display:inline-block; min-width:2.5rem; text-align:center;">${item.char}<br><span style='font-size:1rem; color:#333; font-weight:normal;'>(${item.ans})</span></span>`;
-        });
-        html += '</div>';
+            html += '</div>';
+        }
+        // Display consonants (if any)
+        if (consonantItems.length > 0) {
+            html += '<div class="mb-2"><strong>Consonants</strong></div>';
+            html += '<div class="mb-2 d-flex flex-wrap justify-content-center">';
+            consonantItems.forEach(item => {
+                let user = (userAnswers[item.gIdx] && userAnswers[item.gIdx][item.i]) ? userAnswers[item.gIdx][item.i].trim().toLowerCase() : '';
+                let isMistake = userMistakes[item.gIdx] && userMistakes[item.gIdx][item.i];
+                let isCorrect = user === item.ans && !isMistake;
+                html += `<span style="font-size:1.5rem; margin:0 10px 10px 0; color:${isCorrect ? '#28a745' : (isMistake ? '#dc3545' : '#333')}; font-weight:bold; display:inline-block; min-width:2.5rem; text-align:center;">${item.char}<br><span style='font-size:1rem; color:#333; font-weight:normal;'>(${item.ans})</span></span>`;
+            });
+            html += '</div>';
+        }
         html += `</div><button class="btn btn-primary mt-3" id="closeResultsBtn">Close</button></div>`;
         body.innerHTML = html;
         document.getElementById('closeResultsBtn').onclick = closeGameModal;
@@ -330,5 +334,179 @@ window.addEventListener('DOMContentLoaded', event => {
         if (playAdvBtn) playAdvBtn.onclick = function() { showGameModal('advanced'); };
         const closeBtn = document.getElementById('closeAlphabetGameBtn');
         if (closeBtn) closeBtn.onclick = closeGameModal;
+
+        // Test button logic
+        const testBtn = document.getElementById('testAlphabetGameBtn');
+        if (testBtn) testBtn.onclick = showTestScenariosModal;
     });
-})();
+
+    // Show test scenarios modal
+    function showTestScenariosModal() {
+        // Create modal if not exists
+        let modal = document.getElementById('alphabetTestModal');
+        if (!modal) {
+            modal = document.createElement('div');
+            modal.id = 'alphabetTestModal';
+            modal.className = 'modal fade show';
+            modal.style.display = 'block';
+            modal.style.background = 'rgba(0,0,0,0.5)';
+            modal.style.position = 'fixed';
+            modal.style.top = '0';
+            modal.style.left = '0';
+            modal.style.width = '100vw';
+            modal.style.height = '100vh';
+            modal.style.zIndex = '2000';
+            modal.innerHTML = `
+                <div class="modal-dialog modal-xl" style="margin-top:40px;">
+                  <div class="modal-content">
+                    <div class="modal-header border-0">
+                      <h4 class="modal-title">Test Scenarios</h4>
+                      <button class="btn-close" type="button" id="closeAlphabetTestModalBtn"></button>
+                    </div>
+                    <div class="modal-body" id="alphabetTestModalBody"></div>
+                  </div>
+                </div>
+            `;
+            document.body.appendChild(modal);
+        }
+        // Render test scenarios
+        renderTestScenarios();
+        modal.style.display = 'block';
+        document.body.classList.add('modal-open');
+        document.getElementById('closeAlphabetTestModalBtn').onclick = function() {
+            modal.style.display = 'none';
+            document.body.classList.remove('modal-open');
+        };
+    }
+
+    function renderTestScenarios() {
+    // Real test runner for each level
+    const testLevels = [
+        {name: 'Basic', mode: 'basic', mistakes: 1},
+        {name: 'Intermediate', mode: 'intermediate', mistakes: 2},
+        {name: 'Advanced', mode: 'advanced', mistakes: 3}
+    ];
+    let html = '';
+    testLevels.forEach(test => {
+        const result = runAlphabetGameTest(test.mode, test.mistakes);
+        html += `<div class="mb-5 p-3 border rounded">
+            <h5 class="mb-3">${test.name} (Mistakes: ${test.mistakes})</h5>
+            ${result}
+        </div>`;
+    });
+    document.getElementById('alphabetTestModalBody').innerHTML = html;
+    }
+
+    // Simulate the real game logic for a level, making N mistakes, and return the result HTML
+    function runAlphabetGameTest(mode, mistakesToMake) {
+        // Use the real game data and logic
+        // Setup game state as in showGameModal
+    let vowelsCopy = vowels.slice();
+    let consonantsCopy = consonants.slice();
+        let vowelGroupsShuffled = [];
+        let consonantGroupsShuffled = [];
+        if (mode === 'advanced') {
+            // Shuffle for advanced (simulate shuffle, but for test, keep order for determinism)
+            for (let i = 0; i < vowelsCopy.length; i += 2) {
+                vowelGroupsShuffled.push(vowelsCopy.slice(i, i + 2));
+            }
+            for (let i = 0; i < consonantsCopy.length; i += 3) {
+                consonantGroupsShuffled.push(consonantsCopy.slice(i, i + 3));
+            }
+        } else {
+            for (let i = 0; i < vowels.length; i += 2) {
+                vowelGroupsShuffled.push(vowels.slice(i, i + 2));
+            }
+            const consonantGroupIndices = [
+                [0,1,2], [3,4,5], [6,7,8], [9,10,11], [12,13,14], [15,16,17], [18,19,20]
+            ];
+            consonantGroupIndices.forEach(idxArr => {
+                consonantGroupsShuffled.push(idxArr.map(idx => consonants[idx]));
+            });
+        }
+        // Simulate user answers and mistakes
+        let userAnswers = [];
+        let userMistakes = [];
+        let allGroups = vowelGroupsShuffled.concat(consonantGroupsShuffled);
+        let mistakeCount = 0;
+        allGroups.forEach((group, gIdx) => {
+            userAnswers[gIdx] = [];
+            userMistakes[gIdx] = [];
+            group.forEach((item, i) => {
+                // Only make mistakes for consonants, not vowels
+                let consonantIdx = consonants.findIndex(c => c.char === item.char);
+                if (mistakeCount < mistakesToMake && consonantIdx === mistakeCount) {
+                    userAnswers[gIdx][i] = 'WRONG';
+                    userMistakes[gIdx][i] = true;
+                    mistakeCount++;
+                } else {
+                    userAnswers[gIdx][i] = item.ans;
+                    userMistakes[gIdx][i] = false;
+                }
+            });
+        });
+        // Now, use the real showResultsScreen logic to build the result HTML
+        // (copy the relevant part, but use our simulated state)
+        let totalLetters = 0;
+        allGroups.forEach(group => { totalLetters += group.length; });
+        let totalCorrectFinal = totalLetters - mistakesToMake;
+        let html = `<div class="mb-3">Total Correct: <b>${totalCorrectFinal}</b> / ${totalLetters}</div>
+            <div class="mb-3">Total Mistakes: <b style='color:#dc3545;'>${mistakesToMake}</b></div>`;
+        // Map for quick lookup of user answers/mistakes by char and ans
+        let answerMap = {};
+        allGroups.forEach((group, gIdx) => {
+            group.forEach((item, i) => {
+                answerMap[item.char + '|' + item.ans] = { gIdx, i };
+            });
+        });
+        // Vowels: use the original vowels array order
+        let vowelItems = [];
+        vowels.forEach(v => {
+            let key = v.char + '|' + v.ans;
+            if (answerMap[key]) {
+                let {gIdx, i} = answerMap[key];
+                vowelItems.push({
+                    char: v.char,
+                    ans: v.ans,
+                    gIdx,
+                    i
+                });
+            }
+        });
+        // Consonants: use the original consonants array order
+        let consonantItems = [];
+        consonants.forEach(c => {
+            let key = c.char + '|' + c.ans;
+            if (answerMap[key]) {
+                let {gIdx, i} = answerMap[key];
+                consonantItems.push({
+                    char: c.char,
+                    ans: c.ans,
+                    gIdx,
+                    i
+                });
+            }
+        });
+        // Display vowels
+        html += '<div class="mb-2"><strong>Vowels</strong></div>';
+        html += '<div class="mb-2 d-flex flex-wrap justify-content-center">';
+        vowelItems.forEach(item => {
+            let user = (userAnswers[item.gIdx] && userAnswers[item.gIdx][item.i]) ? userAnswers[item.gIdx][item.i].trim().toLowerCase() : '';
+            let isMistake = userMistakes[item.gIdx] && userMistakes[item.gIdx][item.i];
+            let isCorrect = user === item.ans && !isMistake;
+            html += `<span style="font-size:1.5rem; margin:0 10px 10px 0; color:${isCorrect ? '#28a745' : (isMistake ? '#dc3545' : '#333')}; font-weight:bold; display:inline-block; min-width:2.5rem; text-align:center;">${item.char}<br><span style='font-size:1rem; color:#333; font-weight:normal;'>(${item.ans})</span></span>`;
+        });
+        html += '</div>';
+        // Display consonants
+        html += '<div class="mb-2"><strong>Consonants</strong></div>';
+        html += '<div class="mb-2 d-flex flex-wrap justify-content-center">';
+        consonantItems.forEach((item, idx) => {
+            let user = (userAnswers[item.gIdx] && userAnswers[item.gIdx][item.i]) ? userAnswers[item.gIdx][item.i].trim().toLowerCase() : '';
+            let isMistake = userMistakes[item.gIdx] && userMistakes[item.gIdx][item.i];
+            let isCorrect = user === item.ans && !isMistake;
+            html += `<span style="font-size:1.5rem; margin:0 10px 10px 0; color:${isCorrect ? '#28a745' : (isMistake ? '#dc3545' : '#333')}; font-weight:bold; display:inline-block; min-width:2.5rem; text-align:center;">${item.char}<br><span style='font-size:1rem; color:#333; font-weight:normal;'>(${item.ans})</span></span>`;
+        });
+        html += '</div>';
+    return html;
+    }
+})(); // Properly close the IIFE
