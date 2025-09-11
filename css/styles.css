@@ -1,4 +1,50 @@
-@charset "UTF-8";
+.typing-box {
+  width: 64px;
+  height: 48px;
+  display: inline-block;
+  margin-right: 14px;
+  text-align: center;
+  font-size: 1.1rem;
+  border: 2px solid #bdbdbd;
+  border-radius: 10px;
+  background: #f7f7f7;
+  box-sizing: border-box;
+}
+/* Allow scroll in Level Complete modal body */
+#alphabetGameBody {
+  overflow-y: auto !important;
+  max-height: 70vh !important;
+}
+/* Custom nav-arrow button style for blue/white invert and smooth hover */
+.nav-arrow {
+  background: #253445;
+  color: #fff;
+  border: none;
+  border-radius: 10px;
+  min-width: 44px;
+  height: 44px;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.25rem;
+  transition: background 0.15s, color 0.15s, box-shadow 0.15s;
+  box-shadow: none;
+}
+.nav-arrow:focus {
+  outline: none;
+  box-shadow: 0 0 0 0.15rem rgba(37,52,69,.15);
+}
+.nav-arrow:hover, .nav-arrow:active {
+  background: #32445a;
+  color: #fff;
+  box-shadow: 0 2px 8px rgba(37,52,69,0.10);
+}
+/* Ensure nav arrows and button row align and fit on one line */
+.d-flex.align-items-center.justify-content-center.gap-2.mt-2 > .nav-arrow {
+  margin: 0 2px;
+  flex-shrink: 0;
+}
 /*!
 * Start Bootstrap - Freelancer v7.0.7 (https://startbootstrap.com/theme/freelancer)
 * Copyright 2013-2023 Start Bootstrap

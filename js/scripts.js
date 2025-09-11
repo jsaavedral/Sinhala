@@ -1,3 +1,36 @@
+        // Debug: log mousedown and click on draggable tiles
+    console.log('scripts.js loaded');
+        document.querySelectorAll('.draggable-answer').forEach(tile => {
+            tile.addEventListener('mousedown', function(e) {
+                console.log('TILE MOUSEDOWN', tile.getAttribute('data-ans'));
+            });
+            tile.addEventListener('click', function(e) {
+                console.log('TILE CLICK', tile.getAttribute('data-ans'));
+            });
+        });
+        // Debug: log mousedown and click on drop targets
+        document.querySelectorAll('.drop-target').forEach(target => {
+            target.addEventListener('mousedown', function(e) {
+                console.log('DROP TARGET MOUSEDOWN', target.getAttribute('data-idx'));
+            });
+            target.addEventListener('click', function(e) {
+                console.log('DROP TARGET CLICK', target.getAttribute('data-idx'));
+            });
+        });
+        // Allow player to click a drop target to remove its answer and return the tile
+        document.querySelectorAll('.drop-target').forEach(target => {
+            target.addEventListener('click', function() {
+                let ans = target.getAttribute('data-ans');
+                if (ans) {
+                    let tile = document.querySelector('.draggable-answer[data-ans="' + ans + '"]');
+                    if (tile) tile.style.visibility = 'visible';
+                    target.textContent = '';
+                    target.removeAttribute('data-ans');
+                    target.style.borderColor = '#aaa';
+                    target.style.background = '#f8f9fa';
+                }
+            });
+        });
 /*!
 * Start Bootstrap - Freelancer v7.0.7 (https://startbootstrap.com/theme/freelancer)
 * Copyright 2013-2023 Start Bootstrap
@@ -161,38 +194,263 @@ window.addEventListener('DOMContentLoaded', event => {
         document.getElementById('alphabetGameModal').style.display = 'none';
     }
     function renderStage() {
-        const body = document.getElementById('alphabetGameBody');
+    const body = document.getElementById('alphabetGameBody');
+    // Set a fixed min width and height for the modal body to avoid resizing between modes
+    body.style.minWidth = '420px';
+    body.style.maxWidth = '420px';
+    body.style.minHeight = '440px';
+    body.style.maxHeight = '440px';
+    body.style.overflow = 'hidden';
         let html = '';
         let isVowel = stage < window.vowelGroupsShuffled.length;
         let groupIdx = isVowel ? stage : stage - window.vowelGroupsShuffled.length;
         let group = isVowel ? window.vowelGroupsShuffled[groupIdx] : window.consonantGroupsShuffled[groupIdx];
         let groupType = isVowel ? 'Vowels' : 'Consonants';
-        html += `<h5>${groupType} (Group ${groupIdx+1})</h5>`;
-        // Prepare userAnswers for this group if not present
+    html += `<h5>${groupType} (Group ${groupIdx+1})</h5>`;
+    // Always reserve space for drag-and-drop instructions for smooth transition
+    html += `<div class="dragdrop-instructions" style="min-height:24px;margin-bottom:8px;opacity:0;">Drag the correct answer to each letter.</div>`;
+        // Prepare userAnswers for this group if not present and render input boxes for typing mode
         if (!userAnswers[stage]) {
             userAnswers[stage] = group.map(() => '');
         }
         if (!userMistakes[stage]) {
             userMistakes[stage] = group.map(() => false);
         }
-        html += `<form id="alphaForm">`;
+        html += '<form id="alphaForm" class="typing-mode">';
         group.forEach((item, i) => {
-            html += `<div class="mb-2 alphabet-game-row d-flex align-items-center" style="flex-wrap:nowrap;overflow-x:auto;"><span style="font-size:2rem; min-width:2.5rem;">${item.char}</span> <input type="text" class="alpha-input" data-idx="${i}" maxlength="5" style="width:60px; margin-right:10px; text-transform:lowercase;" autocapitalize="off" autocomplete="off" inputmode="text" value="${userAnswers[stage][i] || ''}" /> <span class="answer-hint" id="answer-hint-${i}" style="color:#28a745; font-weight:bold; margin-left:10px; min-width:2.5rem; white-space:nowrap;"></span></div>`;
+            html += `<div class="mb-2 alphabet-game-row d-flex align-items-center" style="flex-wrap:nowrap;overflow-x:auto;">
+                <span style="font-size:2rem; min-width:2.5rem;">${item.char}</span>
+                <input type="text" class="form-control answer-input typing-box" data-idx="${i}" style="width:64px; display:inline-block; margin-right:14px; text-align:center; font-size:1.1rem; border:2px solid #bdbdbd; border-radius:10px; background:#f7f7f7;" maxlength="6" autocomplete="off" value="${userAnswers[stage][i] || ''}" />
+                <span class="answer-hint" id="answer-hint-${i}" style="color:#28a745; font-weight:bold; margin-left:10px; min-width:2.5rem; white-space:nowrap;"></span>
+            </div>`;
         });
-        html += '<button type="button" class="btn btn-primary mt-2" id="checkAlphaBtn">Check My Answer</button>';
+    html += '<div class="d-flex align-items-center justify-content-center gap-2 mt-2">';
+    if (stage > 0) html += '<button class="nav-arrow" id="prevStageBtn" style="font-size:1.5rem;line-height:1;">&#8592;</button>';
+    html += '<button type="button" class="btn btn-primary" id="checkAlphaBtn">Check My Answer</button>';
+    html += `<button type="button" class="btn btn-outline-secondary" id="toggleModeBtn">Drag & Drop</button>`;
+    if (solvedStages[stage] && stage < window.vowelGroupsShuffled.length + window.consonantGroupsShuffled.length - 1) html += '<button class="nav-arrow" id="nextStageBtn" style="font-size:1.5rem;line-height:1;">&#8594;</button>';
+    html += '</div>';
         html += '<div id="alphaResult" class="mt-2"></div>';
         html += '</form>';
+        body.innerHTML = html;
+        // Toggle button event (must be set after rendering)
+        setTimeout(function() {
+            const toggleBtn = document.getElementById('toggleModeBtn');
+            if (toggleBtn) {
+                toggleBtn.onclick = function() {
+                    renderDragDropStage(group);
+                };
+            }
+        }, 0);
+    // Render drag & drop UI for the current stage
+    function renderDragDropStage(group) {
+    const body = document.getElementById('alphabetGameBody');
+    // Set a fixed min width and height for the modal body to avoid resizing between modes
+    body.style.minWidth = '420px';
+    body.style.maxWidth = '420px';
+    body.style.minHeight = '440px';
+    body.style.maxHeight = '440px';
+    body.style.overflow = 'hidden';
+        let html = '';
+        let isVowel = stage < window.vowelGroupsShuffled.length;
+        let groupIdx = isVowel ? stage : stage - window.vowelGroupsShuffled.length;
+        let groupType = isVowel ? 'Vowels' : 'Consonants';
+        html += `<h5>${groupType} (Group ${groupIdx+1})</h5>`;
+    html += `<div class="dragdrop-instructions" style="min-height:24px;margin-bottom:8px;opacity:1;">Drag the correct answer to each letter.</div>`;
+        html += `<div id="dragdrop-rows">`;
+        // Shuffle answers for drag items
+        let answers = group.map(g => g.ans);
+        let shuffled = answers.slice();
+        shuffleArray(shuffled);
+            html += `<div class="dragdrop-rows d-flex">`;
+            html += `<div class="drop-targets flex-grow-1">`;
+            group.forEach((item, i) => {
+                let droppedAns = '';
+                if (window.userAnswers && window.userAnswers[stage] && window.userAnswers[stage][i]) {
+                    droppedAns = window.userAnswers[stage][i];
+                }
+                html += `<div class="mb-2 alphabet-game-row d-flex align-items-center">
+                    <span style="font-size:2rem; min-width:2.5rem;">${item.char}</span>
+                    <div class="drop-target dragdrop-box" data-idx="${i}" style="width:64px; height:48px; border:2px solid #bdbdbd; margin-right:14px; display:flex; align-items:center; justify-content:center; vertical-align:middle; text-align:center; background:#f7f7f7; border-radius:10px; box-shadow:0 2px 8px rgba(0,0,0,0.04); position:relative;">`;
+                if (droppedAns) {
+                    html += `<div class='draggable-answer btn btn-outline-dark mb-2' draggable='true' data-ans='${droppedAns}' data-source='box' style='width:56px; height:38px; display:flex; align-items:center; justify-content:center; font-size:1.1rem; background:#fff; color:#222; border-radius:8px; box-shadow:0 1px 4px rgba(0,0,0,0.08); border:2px solid #bdbdbd; margin:0 auto; position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); z-index:2;'>${droppedAns}</div>`;
+                }
+                    html += `</div>
+                    <span class="answer-hint" id="answer-hint-${i}" style="color:#28a745; font-weight:bold; margin-left:10px; min-width:2.5rem; white-space:nowrap;"></span>
+                </div>`;
+            });
+            html += `</div>`;
+            // Show only tiles not currently dropped in any box
+            html += `<div class="dragdrop-answers d-flex flex-column ms-4">`;
+            shuffled.forEach((ans, i) => {
+                let isDropped = false;
+                if (window.userAnswers && window.userAnswers[stage]) {
+                    isDropped = window.userAnswers[stage].includes(ans);
+                }
+                if (!isDropped) {
+                    html += `<div class="draggable-answer btn btn-outline-dark mb-2" draggable="true" data-ans="${ans}" data-source="tile" style="min-width:60px;">${ans}</div>`;
+                }
+            });
+            html += `</div>`;
+            html += `</div>`;
+    html += '<div class="d-flex align-items-center justify-content-center gap-2 mt-2">';
+    if (stage > 0) html += '<button class="nav-arrow" id="prevStageBtn" style="font-size:1.5rem;line-height:1;">&#8592;</button>';
+    html += '<button type="button" class="btn btn-primary" id="checkDragDropBtn">Check My Answer</button>';
+    html += `<button type="button" class="btn btn-outline-secondary" id="toggleModeBtn">Type Answer</button>`;
+    if (solvedStages[stage] && stage < window.vowelGroupsShuffled.length + window.consonantGroupsShuffled.length - 1) html += '<button class="nav-arrow" id="nextStageBtn" style="font-size:1.5rem;line-height:1;">&#8594;</button>';
+    html += '</div>';
+        // CRAZY button event
+        const crazyBtn = document.getElementById('crazyBtn');
+        if (crazyBtn) {
+            crazyBtn.onclick = function() {
+                alert('CRAZY button was clicked!');
+            };
+        }
+        html += '<div id="alphaResult" class="mt-2"></div>';
+    // No legacy navigation row
+    body.innerHTML = html;
+    // Diagnostic logs
+    console.log('RENDER HTML:', html);
+    console.log('Tiles:', document.querySelectorAll('.draggable-answer'));
+    console.log('Drop targets:', document.querySelectorAll('.drop-target'));
+    attachDragDropEvents(group);
+    }
+
+    // Drag & drop event logic
+    function attachDragDropEvents(group) {
+        // Drag events for answers
+        // Make all tiles draggable and set dragstart event
+        document.querySelectorAll('.draggable-answer').forEach(tile => {
+            tile.setAttribute('draggable', 'true');
+            tile.style.cursor = 'pointer';
+            tile.addEventListener('dragstart', function(e) {
+                console.log('DRAGSTART', tile.getAttribute('data-ans'));
+                e.dataTransfer.setData('text/plain', tile.getAttribute('data-ans'));
+                e.dataTransfer.setData('source', tile.getAttribute('data-source'));
+                if (tile.parentElement.classList.contains('drop-target')) {
+                    e.dataTransfer.setData('source-idx', tile.parentElement.getAttribute('data-idx'));
+                }
+            });
+        });
+        document.querySelectorAll('.drop-target').forEach(target => {
+            target.addEventListener('dragover', function(e) {
+                e.preventDefault();
+                target.style.borderColor = '#444'; // darker shade for hover
+            });
+            target.addEventListener('dragleave', function(e) {
+                target.style.borderColor = '#aaa';
+            });
+            target.addEventListener('drop', function(e) {
+                e.preventDefault();
+                target.style.borderColor = '#222'; // even darker shade for placed
+                let ans = e.dataTransfer.getData('text/plain');
+                let source = e.dataTransfer.getData('source');
+                let sourceIdx = e.dataTransfer.getData('source-idx');
+                let idx = parseInt(target.getAttribute('data-idx'));
+                console.log('DROP DEBUG', {stage, idx, ans, source, sourceIdx, userAnswers: window.userAnswers, group});
+                if (!window.userAnswers) window.userAnswers = [];
+                if (!window.userAnswers[stage]) window.userAnswers[stage] = group.map(() => '');
+                if (source === 'box' && sourceIdx !== undefined && window.userAnswers[stage][parseInt(sourceIdx)] !== undefined) {
+                    window.userAnswers[stage][parseInt(sourceIdx)] = '';
+                }
+                if (window.userAnswers[stage][idx] !== undefined) {
+                    window.userAnswers[stage][idx] = '';
+                    window.userAnswers[stage][idx] = ans;
+                } else {
+                    console.warn('Drop target idx is undefined:', idx, window.userAnswers[stage]);
+                }
+                // Re-render to update UI
+                renderDragDropStage(group);
+            });
+        });
+        // Check button
+        document.getElementById('checkDragDropBtn').onclick = function() {
+            let correct = 0;
+            let mistakes = [];
+            let targets = document.querySelectorAll('.drop-target');
+            let tiles = document.querySelectorAll('.draggable-answer');
+            targets.forEach((target, i) => {
+                let ans = window.userAnswers[stage][i] || '';
+                let tile = target.querySelector('.draggable-answer');
+                if (ans.toLowerCase() === group[i].ans) {
+                    correct++;
+                    target.style.borderColor = '#28a745'; // green for correct
+                    target.style.background = '#eafbe7';
+                    if (tile) tile.style.borderColor = '#28a745';
+                    document.getElementById(`answer-hint-${i}`).textContent = '';
+                } else {
+                    mistakes.push(i);
+                    target.style.borderColor = '#dc3545'; // red for incorrect
+                    target.style.background = '#fbeaea';
+                    if (tile) tile.style.borderColor = '#dc3545';
+                    // Only show answer after third attempt
+                    if (attempts >= 2) {
+                        document.getElementById(`answer-hint-${i}`).textContent = group[i].ans;
+                    } else {
+                        document.getElementById(`answer-hint-${i}`).textContent = '';
+                    }
+                }
+            });
+            attempts++;
+            totalAttempts++;
+            totalQuestions += group.length;
+            totalCorrect += correct;
+            if (correct === group.length) {
+                solvedStages[stage] = true;
+                document.getElementById('alphaResult').innerHTML = `Correct! You got all ${group.length} right.`;
+                setTimeout(() => {
+                    const totalStages = window.vowelGroupsShuffled.length + window.consonantGroupsShuffled.length;
+                    if (stage < totalStages - 1) {
+                        stage++;
+                        attempts = 0;
+                        renderStage();
+                    } else {
+                        showResultsScreen();
+                    }
+                }, 1000);
+            } else if (attempts >= 3) {
+                mistakes.forEach(i => {
+                    userMistakes[stage][i] = true;
+                    document.getElementById(`answer-hint-${i}`).textContent = group[i].ans;
+                });
+                document.getElementById('alphaResult').innerHTML = `You got ${correct} out of ${group.length} correct. Please drag the correct answers as shown to move on.`;
+            } else {
+                document.getElementById('alphaResult').innerHTML = `You got ${correct} out of ${group.length} correct. Attempts: ${attempts}/3`;
+            }
+        };
+        // Toggle button event for switching back to type mode
+        const toggleBtn = document.getElementById('toggleModeBtn');
+        if (toggleBtn) {
+            toggleBtn.onclick = function() {
+                renderStage();
+            };
+        }
         // Navigation
-        html += '<div class="mt-3">';
-        if (stage > 0) html += '<button class="btn btn-secondary me-2" id="prevStageBtn">Previous</button>';
-        if (solvedStages[stage] && stage < window.vowelGroupsShuffled.length + window.consonantGroupsShuffled.length - 1) html += '<button class="btn btn-secondary" id="nextStageBtn">Next</button>';
-        html += '</div>';
+        const prevBtn = document.getElementById('prevStageBtn');
+        if (stage > 0 && prevBtn) {
+            prevBtn.onclick = function() {
+                stage--;
+                attempts = 0;
+                renderStage();
+            };
+        }
+        const nextBtn = document.getElementById('nextStageBtn');
+        if (solvedStages[stage] && stage < window.vowelGroupsShuffled.length + window.consonantGroupsShuffled.length - 1 && nextBtn) {
+            nextBtn.onclick = function() {
+                stage++;
+                attempts = 0;
+                renderStage();
+            };
+        }
+    }
+    // No legacy navigation
         body.innerHTML = html;
         attachGameEvents(group);
     }
     function attachGameEvents(group) {
         document.getElementById('checkAlphaBtn').onclick = function() {
-            const inputs = document.querySelectorAll('.alpha-input');
+            const inputs = document.querySelectorAll('.answer-input');
+        // No need to check for empty boxes; allow checking even if some are empty
             let correct = 0;
             let mistakes = [];
             inputs.forEach((inp, i) => {
@@ -231,8 +489,10 @@ window.addEventListener('DOMContentLoaded', event => {
                 document.getElementById('alphaResult').innerHTML = `You got ${correct} out of ${group.length} correct. Please type the correct answers as shown to move on.`;
                 // Disable navigation buttons if present
                 renderStageNavOnly(true);
-            } else {
+            } else if (attempts > 1) {
                 document.getElementById('alphaResult').innerHTML = `You got ${correct} out of ${group.length} correct. Attempts: ${attempts}/3`;
+            } else {
+                document.getElementById('alphaResult').innerHTML = '';
             }
         };
         if (stage > 0) {
@@ -242,7 +502,7 @@ window.addEventListener('DOMContentLoaded', event => {
                 renderStage();
             };
         }
-        if (solvedStages[stage] && stage < vowelGroups.length + consonantGroups.length - 1) {
+        if (solvedStages[stage] && stage < window.vowelGroupsShuffled.length + window.consonantGroupsShuffled.length - 1) {
             document.getElementById('nextStageBtn').onclick = function() {
                 stage++;
                 attempts = 0;
@@ -260,38 +520,28 @@ window.addEventListener('DOMContentLoaded', event => {
             navDiv.innerHTML = html;
             return;
         }
-        if (stage > 0) html += '<button class="btn btn-secondary me-2" id="prevStageBtn">Previous</button>';
-        if (solvedStages[stage] && stage < vowelGroups.length + consonantGroups.length - 1) html += '<button class="btn btn-secondary" id="nextStageBtn">Next</button>';
-        navDiv.innerHTML = html;
-        // Re-attach navigation events
-        if (stage > 0) {
-            document.getElementById('prevStageBtn').onclick = function() {
-                stage--;
-                attempts = 0;
-                renderStage();
-            };
-        }
-        if (solvedStages[stage] && stage < vowelGroups.length + consonantGroups.length - 1) {
-            document.getElementById('nextStageBtn').onclick = function() {
-                stage++;
-                attempts = 0;
-                renderStage();
-            };
-        }
+    navDiv.innerHTML = '';
     }
     function showResultsScreen() {
         const body = document.getElementById('alphabetGameBody');
         // Count total mistakes (one per letter, only if player gave up)
         let mistakeCount = 0;
         let allGroups = window.vowelGroupsShuffled.concat(window.consonantGroupsShuffled);
-        userMistakes.forEach((group, gIdx) => {
-            if (group) group.forEach(m => { if (m) mistakeCount++; });
-        });
-        // Calculate total letters (all letters in all groups)
+        // let mistakeCount = 0;
         let totalLetters = 0;
-        allGroups.forEach(group => { totalLetters += group.length; });
-        // Total correct is total letters minus mistakes
-        let totalCorrectFinal = totalLetters - mistakeCount;
+        let totalCorrectFinal = 0;
+        allGroups.forEach((group, gIdx) => {
+            group.forEach((item, i) => {
+                totalLetters++;
+                const user = (userAnswers[gIdx] && userAnswers[gIdx][i]) ? userAnswers[gIdx][i].trim().toLowerCase() : '';
+                const isMistake = userMistakes[gIdx] && userMistakes[gIdx][i];
+                if (isMistake || user !== item.ans) {
+                    mistakeCount++;
+                } else {
+                    totalCorrectFinal++;
+                }
+            });
+        });
         let html = `<div class="text-center py-4">
             <h4 class="mb-4">Level Complete!</h4>
             <div class="mb-3">Total Correct: <b>${totalCorrectFinal}</b> / ${totalLetters}</div>

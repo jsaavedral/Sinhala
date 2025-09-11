@@ -303,17 +303,19 @@
                                     </div>
                                     <!-- Alphabet Game Modal (hidden by default) -->
                                     <div id="alphabetGameModal" class="modal" tabindex="-1" style="display:none; background:rgba(0,0,0,0.7); position:fixed; top:0; left:0; width:100vw; height:100vh; z-index:2000; align-items:center; justify-content:center;">
-                                      <div class="modal-dialog modal-lg" style="margin:auto;">
-                                        <div class="modal-content">
-                                          <div class="modal-header">
-                                            <h5 class="modal-title">Sinhala Alphabet Game</h5>
-                                            <button type="button" class="btn-close" id="closeAlphabetGameBtn" aria-label="Close"></button>
-                                          </div>
-                                          <div class="modal-body" id="alphabetGameBody">
-                                            <!-- Game content will be injected here by JS -->
-                                          </div>
-                                        </div>
-                                      </div>
+                                                <div class="modal-dialog modal-lg" style="margin:auto;">
+                                                    <div class="modal-content">
+                                                        <div class="modal-header d-flex align-items-center justify-content-between" style="gap:0.5rem;">
+                                                            <div class="d-flex align-items-center w-100" style="gap:0.5rem;">
+                                                                <h5 class="modal-title mb-0" id="alphabetGameTitle" style="flex:1 1 auto; text-align:left; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">Sinhala Alphabet Game</h5>
+                                                                <button type="button" class="btn-close ms-2" id="closeAlphabetGameBtn" aria-label="Close" style="font-size:1.6rem;"></button>
+                                                            </div>
+                                                        </div>
+                                                        <div class="modal-body" id="alphabetGameBody">
+                                                            <!-- Game content will be injected here by JS -->
+                                                        </div>
+                                                    </div>
+                                                </div>
                                     </div>
                                     <!-- Portfolio Modal - Text-->
                                     <p class="mb-4">Lorem ipsum dolor sit amet, consectetur adipisicing elit. Mollitia neque assumenda ipsam nihil, molestias magnam, recusandae quos quis inventore quisquam velit asperiores, vitae? Reprehenderit soluta, eos quod consequuntur itaque. Nam.</p>
@@ -618,14 +620,23 @@
                 margin-bottom: 0;
               }
             }
-            .portfolio-modal-title {
-              font-size: 2.2rem !important;
-            }
-            @media (max-width: 768px) {
-              .portfolio-modal-title {
-                font-size: 2.7rem !important;
-              }
-            }
+                        .portfolio-modal-title {
+                            font-size: 2.2rem !important;
+                            max-width: 80vw;
+                            white-space: nowrap;
+                            overflow: hidden;
+                            text-overflow: ellipsis;
+                        }
+                        @media (max-width: 768px) {
+                            .portfolio-modal-title {
+                                font-size: 1.5rem !important;
+                                max-width: 60vw;
+                            }
+                            #alphabetGameTitle {
+                                font-size: 1.2rem !important;
+                                max-width: 60vw;
+                            }
+                        }
             #playAlphabetGameBtn,
             #playAlphabetGameIntermediateBtn,
             #playAlphabetGameAdvancedBtn {
