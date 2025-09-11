@@ -228,7 +228,7 @@ window.addEventListener('DOMContentLoaded', event => {
                     document.getElementById(`answer-hint-${i}`).textContent = group[i].ans;
                 });
                 // Do NOT allow navigation yet; require all correct answers
-                document.getElementById('alphaResult').innerHTML = `You got ${correct} out of ${group.length} correct. The correct answers are shown in green. Please enter all correct answers to continue.`;
+                document.getElementById('alphaResult').innerHTML = `You got ${correct} out of ${group.length} correct. Please type the correct answers as shown to move on.`;
                 // Disable navigation buttons if present
                 renderStageNavOnly(true);
             } else {
@@ -371,7 +371,99 @@ window.addEventListener('DOMContentLoaded', event => {
         if (playIntBtn) playIntBtn.onclick = function() { showGameModal('intermediate'); };
         const playAdvBtn = document.getElementById('playAlphabetGameAdvancedBtn');
         if (playAdvBtn) playAdvBtn.onclick = function() { showGameModal('advanced'); };
+        const playTestBtn = document.getElementById('testAlphabetGameBtn');
+        if (playTestBtn) playTestBtn.onclick = runAlphabetGameTests;
         const closeBtn = document.getElementById('closeAlphabetGameBtn');
         if (closeBtn) closeBtn.onclick = closeGameModal;
+
+        // Realistic test runner for all 3 levels
+        function runAlphabetGameTests() {
+            const levels = [
+                {mode: 'basic', mistakes: 1},
+                {mode: 'intermediate', mistakes: 2},
+                {mode: 'advanced', mistakes: 3}
+            ];
+            let html = '<div style="max-height:60vh;overflow-y:auto">';
+            levels.forEach(({mode, mistakes}) => {
+                // Setup game state as in showGameModal
+                let vowelsCopy = vowels.slice();
+                let consonantsCopy = consonants.slice();
+                let vowelGroupsTest = [];
+                let consonantGroupsTest = [];
+                if (mode === 'advanced') {
+                    shuffleArray(vowelsCopy);
+                    for (let i = 0; i < vowelsCopy.length; i += 2) {
+                        vowelGroupsTest.push(vowelsCopy.slice(i, i + 2));
+                    }
+                    shuffleArray(consonantsCopy);
+                    for (let i = 0; i < consonantsCopy.length; i += 3) {
+                        consonantGroupsTest.push(consonantsCopy.slice(i, i + 3));
+                    }
+                } else if (mode === 'intermediate') {
+                    for (let i = 0; i < vowels.length; i += 2) {
+                        let group = vowels.slice(i, i + 2);
+                        shuffleArray(group);
+                        vowelGroupsTest.push(group);
+                    }
+                    consonantGroupIndices.forEach(idxArr => {
+                        let group = idxArr.map(idx => consonants[idx]);
+                        shuffleArray(group);
+                        consonantGroupsTest.push(group);
+                    });
+                } else {
+                    for (let i = 0; i < vowels.length; i += 2) {
+                        vowelGroupsTest.push(vowels.slice(i, i + 2));
+                    }
+                    consonantGroupIndices.forEach(idxArr => {
+                        consonantGroupsTest.push(idxArr.map(idx => consonants[idx]));
+                    });
+                }
+                let allGroups = vowelGroupsTest.concat(consonantGroupsTest);
+                // Flatten all items for random mistake selection
+                let allItems = [];
+                allGroups.forEach((group, gIdx) => {
+                    group.forEach((item, i) => {
+                        allItems.push({char: item.char, ans: item.ans, gIdx, i});
+                    });
+                });
+                // Pick random unique indices for mistakes
+                let mistakeIndices = [];
+                while (mistakeIndices.length < mistakes && mistakeIndices.length < allItems.length) {
+                    let idx = Math.floor(Math.random() * allItems.length);
+                    if (!mistakeIndices.includes(idx)) mistakeIndices.push(idx);
+                }
+                let testRows = [];
+                allItems.forEach((item, idx) => {
+                    let isMistake = mistakeIndices.includes(idx);
+                    let userInput, isCorrect;
+                    if (isMistake) {
+                        userInput = 'xxx'; // wrong answer
+                        isCorrect = false;
+                    } else {
+                        userInput = item.ans;
+                        isCorrect = true;
+                    }
+                    testRows.push({char: item.char, ans: item.ans, userInput, isCorrect});
+                });
+                let correct = testRows.filter(r => r.isCorrect).length;
+                let total = testRows.length;
+                html += `<h5 style='margin-top:1.5em;'>${mode.charAt(0).toUpperCase() + mode.slice(1)} Level</h5>`;
+                html += `<div style='margin-bottom:0.5em;'>Result: <span style='color:#28a745;font-weight:bold;'>${correct} correct</span>, <span style='color:#dc3545;font-weight:bold;'>${total-correct} mistakes</span> (expected ${mistakes} mistakes)</div>`;
+                html += `<table class='table table-bordered table-sm' style='width:auto;min-width:300px'><thead><tr><th>Char</th><th>Your Input</th><th>Correct Answer</th></tr></thead><tbody>`;
+                testRows.forEach(row => {
+                    html += `<tr>`;
+                    html += `<td style='font-size:1.5em'>${row.char}</td>`;
+                    html += `<td style='color:${row.isCorrect ? '#28a745' : '#dc3545'};font-weight:bold;'>${row.userInput}</td>`;
+                    html += `<td style='color:#28a745;font-weight:bold;'>${row.ans}</td>`;
+                    html += `</tr>`;
+                });
+                html += `</tbody></table>`;
+            });
+            html += '</div><button class="btn btn-primary mt-3" id="closeTestResultsBtn">Close</button>';
+            // Show in the game modal
+            document.getElementById('alphabetGameModal').style.display = 'flex';
+            document.getElementById('alphabetGameBody').innerHTML = html;
+            document.getElementById('closeTestResultsBtn').onclick = closeGameModal;
+        }
     });
 })();
